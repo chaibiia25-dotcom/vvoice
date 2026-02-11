@@ -13,27 +13,29 @@ async function run() {
   const { port } = server.address();
   const base = `http://127.0.0.1:${port}`;
 
+  const root = await fetch(`${base}/`);
+  assert.equal(root.status, 200);
+  const rootHtml = await root.text();
+  assert.ok(rootHtml.includes('vvoice backend en ligne'));
+
   const health = await fetch(`${base}/api/health`);
   assert.equal(health.status, 200);
   const healthJson = await health.json();
   assert.equal(healthJson.status, 'ok');
 
-  const badRequest = await fetch(`${base}/api/voice/process`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({})
-  });
-  assert.equal(badRequest.status, 400);
+  const caps = await fetch(`${base}/api/capabilities`);
+  assert.equal(caps.status, 200);
+  const capsJson = await caps.json();
+  assert.ok(capsJson.pipeline.includes('llm_streaming'));
 
-  const validRequest = await fetch(`${base}/api/voice/process`, {
+  const evalRequest = await fetch(`${base}/api/evaluation/score`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ text: '  Bonjour React  ' })
+    body: JSON.stringify({ factuality: 8, relevance: 9, fluency: 7, uncertainty: 6 })
   });
-  assert.equal(validRequest.status, 200);
-  const validJson = await validRequest.json();
-  assert.equal(validJson.processedText, 'Bonjour React');
-  assert.equal(validJson.length, 13);
+  assert.equal(evalRequest.status, 200);
+  const evalJson = await evalRequest.json();
+  assert.equal(evalJson.global, 7.5);
 
   server.close();
 }

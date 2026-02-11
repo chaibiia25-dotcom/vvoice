@@ -21,6 +21,8 @@ npm run dev
 Serveur HTTP: `http://localhost:3001`  
 WebSocket: `ws://localhost:3001/ws`
 
+En ouvrant `http://localhost:3001/`, une page de statut backend s'affiche (plus de `Cannot GET /`).
+
 ## Endpoints REST
 ### `GET /api/health`
 Retourne le statut et les providers actifs.
