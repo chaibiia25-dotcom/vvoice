@@ -1,27 +1,75 @@
-import express from 'express';
-import cors from 'cors';
 import { evaluateResponse } from './evaluation/rubric.js';
 import { config } from './config.js';
 
+function sendJson(res, statusCode, payload) {
+  res.writeHead(statusCode, {
+    'content-type': 'application/json; charset=utf-8',
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': 'content-type'
+  });
+  res.end(JSON.stringify(payload));
+}
+
+function sendHtml(res, statusCode, html) {
+  res.writeHead(statusCode, {
+    'content-type': 'text/html; charset=utf-8',
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': 'content-type'
+  });
+  res.end(html);
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+
+    req.on('data', (chunk) => {
+      data += chunk;
+      if (data.length > 2_000_000) {
+        reject(new Error('PAYLOAD_TOO_LARGE'));
+      }
+    });
+
+    req.on('end', () => {
+      if (!data) {
+        resolve({});
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(data));
+      } catch {
+        reject(new Error('INVALID_JSON'));
+      }
+    });
+
+    req.on('error', reject);
+  });
+}
+
 export function createApp() {
-  const app = express();
+  return async function app(req, res) {
+    const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
 
-  app.use(cors());
-  app.use(express.json({ limit: '2mb' }));
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET,POST,OPTIONS',
+        'access-control-allow-headers': 'content-type'
+      });
+      res.end();
+      return;
+    }
 
-  app.get('/', (_req, res) => {
-    res.type('html').send(`<!doctype html>
+    if (req.method === 'GET' && url.pathname === '/') {
+      sendHtml(res, 200, `<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>vvoice backend</title>
-    <style>
-      body { font-family: Inter, Arial, sans-serif; margin: 2rem; color: #1f2937; }
-      h1 { margin-bottom: .5rem; }
-      code { background: #f3f4f6; padding: .125rem .35rem; border-radius: 4px; }
-      li { margin: .25rem 0; }
-    </style>
   </head>
   <body>
     <h1>vvoice backend en ligne ✅</h1>
@@ -31,36 +79,64 @@ export function createApp() {
       <li><code>GET /api/health</code></li>
       <li><code>GET /api/capabilities</code></li>
       <li><code>POST /api/evaluation/score</code></li>
-      <li><code>WS /ws</code></li>
+      <li><code>GET /ws</code> (upgrade WebSocket requis)</li>
     </ul>
   </body>
 </html>`);
-  });
+      return;
+    }
 
-  app.get('/api/health', (_req, res) => {
-    res.json({
-      status: 'ok',
-      providers: {
-        llm: config.llmProvider,
-        stt: config.sttProvider,
-        tts: config.ttsProvider
+    if (req.method === 'GET' && url.pathname === '/api/health') {
+      sendJson(res, 200, {
+        status: 'ok',
+        providers: {
+          llm: config.llmProvider,
+          stt: config.sttProvider,
+          tts: config.ttsProvider
+        }
+      });
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/capabilities') {
+      sendJson(res, 200, {
+        transport: ['REST', 'WebSocket:/ws'],
+        pipeline: ['speech_to_text', 'llm_streaming', 'text_to_speech'],
+        qualityRubric: ['factuality', 'relevance', 'fluency', 'uncertainty']
+      });
+      return;
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/evaluation/score') {
+      try {
+        const body = await readJsonBody(req);
+        const { factuality, relevance, fluency, uncertainty } = body ?? {};
+        const result = evaluateResponse({ factuality, relevance, fluency, uncertainty });
+        sendJson(res, 200, result);
+      } catch (error) {
+        if (error.message === 'INVALID_JSON') {
+          sendJson(res, 400, { error: 'INVALID_JSON', message: 'Payload JSON invalide.' });
+          return;
+        }
+
+        if (error.message === 'PAYLOAD_TOO_LARGE') {
+          sendJson(res, 413, { error: 'PAYLOAD_TOO_LARGE' });
+          return;
+        }
+
+        sendJson(res, 500, { error: 'INTERNAL_ERROR' });
       }
-    });
-  });
+      return;
+    }
 
-  app.get('/api/capabilities', (_req, res) => {
-    res.json({
-      transport: ['REST', 'WebSocket:/ws'],
-      pipeline: ['speech_to_text', 'llm_streaming', 'text_to_speech'],
-      qualityRubric: ['factuality', 'relevance', 'fluency', 'uncertainty']
-    });
-  });
+    if (req.method === 'GET' && url.pathname === '/ws') {
+      sendJson(res, 426, {
+        error: 'UPGRADE_REQUIRED',
+        message: 'Utilisez un client WebSocket pour ws://localhost:' + config.port + '/ws'
+      });
+      return;
+    }
 
-  app.post('/api/evaluation/score', (req, res) => {
-    const { factuality, relevance, fluency, uncertainty } = req.body ?? {};
-    const result = evaluateResponse({ factuality, relevance, fluency, uncertainty });
-    res.json(result);
-  });
-
-  return app;
+    sendJson(res, 404, { error: 'NOT_FOUND' });
+  };
 }

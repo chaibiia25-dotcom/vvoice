@@ -9,6 +9,6 @@ const server = createServer(app);
 registerRealtimeServer(server);
 
 server.listen(config.port, () => {
-  console.log(`vvoice multimodal backend listening on http://localhost:${config.port}`);
-  console.log('WebSocket endpoint: ws://localhost:' + config.port + '/ws');
+  console.log(`vvoice backend listening on http://localhost:${config.port}`);
+  console.log(`WebSocket target: ws://localhost:${config.port}/ws`);
 });

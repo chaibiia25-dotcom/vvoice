@@ -8,18 +8,18 @@ Ce projet fournit un **socle backend Node.js** pour un agent conversationnel mul
 
 ## Stack actuelle
 - Node.js (ESM)
-- Express (API REST)
-- WebSocket (`ws`) pour la conversation temps réel
+- HTTP natif Node (API REST)
 - Architecture provider-based (mock / openai / anthropic / gemini / local)
+- Hook WebSocket prêt pour une implémentation complète
 
 ## Démarrage
+Aucune dépendance externe n'est requise pour exécuter ce socle.
 ```bash
-npm install
 npm run dev
 ```
 
 Serveur HTTP: `http://localhost:3001`  
-WebSocket: `ws://localhost:3001/ws`
+WebSocket: `ws://localhost:3001/ws` (endpoint réservé, handshake non implémenté dans cette version sans dépendances externes)
 
 En ouvrant `http://localhost:3001/`, une page de statut backend s'affiche (plus de `Cannot GET /`).
 
@@ -56,10 +56,8 @@ Exemple payload:
 ```
 
 ### Serveur -> client
-- `session.ready`
-- `llm.chunk` (streaming)
-- `assistant.final` (texte final + audioBase64 + télémetrie)
-- `error`
+- `GET /ws` retourne `426` si appelé en HTTP
+- Upgrade WebSocket: stub architecture présent, implémentation complète à brancher au prochain jalon
 
 ## Variables d'environnement
 - `PORT` (défaut: `3001`)

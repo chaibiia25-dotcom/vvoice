@@ -1,7 +1,7 @@
 {
   "name": "vvoice-multimodal-agent",
-  "version": "1.1.0",
-  "description": "Backend TypeScript-ready architecture (implemented in modern Node ESM) for a real-time multimodal conversational agent",
+  "version": "1.2.0",
+  "description": "Runnable multimodal-agent backend skeleton without external dependencies",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -13,10 +13,5 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.2",
-    "ws": "^8.18.0"
-  }
+  "dependencies": {}
 }
