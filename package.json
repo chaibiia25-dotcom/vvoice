@@ -1,0 +1,22 @@
+{
+  "name": "vvoice-multimodal-agent",
+  "version": "1.1.0",
+  "description": "Backend TypeScript-ready architecture (implemented in modern Node ESM) for a real-time multimodal conversational agent",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/realtime/wsServer.js",
+    "test": "node tests/pipeline.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}
