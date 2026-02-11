@@ -1,0 +1,17 @@
+{
+  "name": "vvoice-multimodal-agent",
+  "version": "1.2.0",
+  "description": "Runnable multimodal-agent backend skeleton without external dependencies",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/realtime/wsServer.js",
+    "test": "node tests/pipeline.test.js && node tests/smoke.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
